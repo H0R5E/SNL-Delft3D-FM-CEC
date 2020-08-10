@@ -89,6 +89,10 @@ libdir["fortran1932"] = "$(IFORT_COMPILER19)\\compiler\\lib\\ia32"
 libdir["c1932"] = libdir["fortran1932"]
 libdir["fortran1964"] = "$(IFORT_COMPILER19)\\compiler\\lib\\intel64"
 libdir["c1964"] = libdir["fortran1964"]
+libdir["fortran2032"] = "$(IFORT_COMPILER20)\\compiler\\lib\\ia32"
+libdir["c2032"] = libdir["fortran2032"]
+libdir["fortran2064"] = "$(IFORT_COMPILER20)\\compiler\\lib\\intel64"
+libdir["c2064"] = libdir["fortran2064"]
 
 #
 #
@@ -134,7 +138,10 @@ redistdir["fortran1932"] = "$(IFORT_COMPILER19)redist\\ia32\\compiler\\&quot"
 redistdir["c1932"] = "$(IFORT_COMPILER19)redist\\ia32\\compiler\\"
 redistdir["fortran1964"] = "$(IFORT_COMPILER19)redist\\intel64\\compiler\\&quot"
 redistdir["c1964"] = "$(IFORT_COMPILER19)redist\\intel64\\compiler\\"
-
+redistdir["fortran2032"] = "$(IFORT_COMPILER20)redist\\ia32\\compiler\\&quot"
+redistdir["c2032"] = "$(IFORT_COMPILER20)redist\\ia32\\compiler\\"
+redistdir["fortran2064"] = "$(IFORT_COMPILER20)redist\\intel64\\compiler\\&quot"
+redistdir["c2064"] = "$(IFORT_COMPILER20)redist\\intel64\\compiler\\"
 
 # redistdir specifies the directory containing the ifort redistributable dlls
 # The string to be added can be set depending on:
@@ -178,6 +185,10 @@ mkldir["fortran1932"] = "$(IFORT_COMPILER19)redist\\ia32\\mkl\\&quot"
 mkldir["c1932"] = "$(IFORT_COMPILER19)redist\\ia32\\mkl\\"
 mkldir["fortran1964"] = "$(IFORT_COMPILER19)redist\\intel64\\mkl\\&quot"
 mkldir["c1964"] = "$(IFORT_COMPILER19)redist\\intel64\\mkl\\"
+mkldir["fortran2032"] = "$(IFORT_COMPILER20)redist\\ia32\\mkl\\&quot"
+mkldir["c2032"] = "$(IFORT_COMPILER20)redist\\ia32\\mkl\\"
+mkldir["fortran2064"] = "$(IFORT_COMPILER20)redist\\intel64\\mkl\\&quot"
+mkldir["c2064"] = "$(IFORT_COMPILER20)redist\\intel64\\mkl\\"
 
 #
 #
@@ -693,27 +704,28 @@ def build_gui():
     
     if chooseIfort == 1:
         Label(text="IFORT Version:", relief=RIDGE, width=20).grid(row=0, column=2)
-        Radiobutton(root, text="IFORT19: Intel Parallel Studio XE 2019         ", variable=ifort_gui, value=19).grid(row=1, column=2, sticky=W)
-        Radiobutton(root, text="IFORT18: Intel Parallel Studio XE 2018 Update 4", variable=ifort_gui, value=18).grid(row=2, column=2, sticky=W)
-        Radiobutton(root, text="IFORT17: (Not Recommended)                     ", variable=ifort_gui, value=17).grid(row=3, column=2, sticky=W)
-        Radiobutton(root, text="IFORT16: Intel Parallel Studio XE 2016 Update 4", variable=ifort_gui, value=16).grid(row=4, column=2, sticky=W)
-        Radiobutton(root, text="IFORT15: Intel Parallel Studio XE 2015 Update 6", variable=ifort_gui, value=15).grid(row=5, column=2, sticky=W)
-        Radiobutton(root, text="IFORT14: Intel Visual Fortran Composer XE 2014 ", variable=ifort_gui, value=14).grid(row=6, column=2, sticky=W)
-        Radiobutton(root, text="IFORT13: Intel Visual Fortran Composer XE 2013 ", variable=ifort_gui, value=13).grid(row=7, column=2, sticky=W)
-        Radiobutton(root, text="IFORT12: Intel Visual Fortran Composer XE 2011 ", variable=ifort_gui, value=12).grid(row=8, column=2, sticky=W)
+        Radiobutton(root, text="IFORT20: Intel Parallel Studio XE 2020 Update 2", variable=ifort_gui, value=20).grid(row=1, column=2, sticky=W)
+        Radiobutton(root, text="IFORT19: Intel Parallel Studio XE 2019         ", variable=ifort_gui, value=19).grid(row=2, column=2, sticky=W)
+        Radiobutton(root, text="IFORT18: Intel Parallel Studio XE 2018 Update 4", variable=ifort_gui, value=18).grid(row=3, column=2, sticky=W)
+        Radiobutton(root, text="IFORT17: (Not Recommended)                     ", variable=ifort_gui, value=17).grid(row=4, column=2, sticky=W)
+        Radiobutton(root, text="IFORT16: Intel Parallel Studio XE 2016 Update 4", variable=ifort_gui, value=16).grid(row=5, column=2, sticky=W)
+        Radiobutton(root, text="IFORT15: Intel Parallel Studio XE 2015 Update 6", variable=ifort_gui, value=15).grid(row=6, column=2, sticky=W)
+        Radiobutton(root, text="IFORT14: Intel Visual Fortran Composer XE 2014 ", variable=ifort_gui, value=14).grid(row=7, column=2, sticky=W)
+        Radiobutton(root, text="IFORT13: Intel Visual Fortran Composer XE 2013 ", variable=ifort_gui, value=13).grid(row=8, column=2, sticky=W)
+        Radiobutton(root, text="IFORT12: Intel Visual Fortran Composer XE 2011 ", variable=ifort_gui, value=12).grid(row=9, column=2, sticky=W)
         # default value
         ifort_gui.set(16)
     else:
         ifort_gui.set(-999)
     
-    Label(text=" ").grid(row=8)
+    Label(text=" ").grid(row=9)
     if chooseIfort == 1:
-        Label(text="Choose your Visual Studio version, .Net Framework version and IFORT version and click 'Apply'").grid(row=9, column=0, columnspan=3)
+        Label(text="Choose your Visual Studio version, .Net Framework version and IFORT version and click 'Apply'").grid(row=10, column=0, columnspan=3)
     else:
-        Label(text="Choose your Visual Studio version and click 'Apply'").grid(row=9, column=0, columnspan=3)
+        Label(text="Choose your Visual Studio version and click 'Apply'").grid(row=10, column=0, columnspan=3)
     
-    b1 = Button(root, text="Apply", width=20, command=do_work).grid(row=10, column=0, sticky=W)
-    b2 = Button(root, text="Exit", width=20, command=exit_button_pressed).grid(row=10, column=2, sticky=E)
+    b1 = Button(root, text="Apply", width=20, command=do_work).grid(row=11, column=0, sticky=W)
+    b2 = Button(root, text="Exit", width=20, command=exit_button_pressed).grid(row=11, column=2, sticky=E)
     
     # To keep GUI window running
     root.mainloop()
