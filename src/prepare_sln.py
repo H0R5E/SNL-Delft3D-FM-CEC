@@ -226,7 +226,7 @@ platformtoolset[2014] = "    <PlatformToolset>v120</PlatformToolset>"
 platformtoolset[2015] = "    <PlatformToolset>v140</PlatformToolset>"
 platformtoolset[2016] = "    <PlatformToolset>v140</PlatformToolset>"
 platformtoolset[2017] = "    <PlatformToolset>v141</PlatformToolset>"
-platformtoolset[2019] = "    <PlatformToolset>v142</PlatformToolset>"
+platformtoolset[2019] = "    <PlatformToolset>Intel C++ Compiler 19.1</PlatformToolset>"
 
 #
 #
