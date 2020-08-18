@@ -1,4 +1,20 @@
 
+# Copyright adri.mourits@deltares.nl 2017
+# Copyright Mathew Topper 2020
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import os
 import glob
 import sys
@@ -28,32 +44,6 @@ toolsversion[2015] = "14.0"
 toolsversion[2016] = "14.0"
 toolsversion[2017] = "14.0"
 toolsversion[2019] = "14.0"
-
-# netcodes defines the .NET frameworks available
-netcodes = [
-    378389,
-    378675,
-    379893,
-    393295,
-    394254,
-    394802,
-    460798,
-    461308,
-    461808,
-    528040,
-]
-netversions = [
-    "4.5",
-    "4.5.1",
-    "4.5.2",
-    "4.6",
-    "4.6.1",
-    "4.6.2",
-    "4.7",
-    "4.7.1",
-    "4.7.2",
-    "net48",
-]
 
 
 def subkeys(path, hkey=winreg.HKEY_LOCAL_MACHINE, flags=0):
@@ -119,24 +109,21 @@ def get_vs_version():
 
 def get_net_version():
     
-    key = "SOFTWARE\\Wow6432Node\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full"
-    registry_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                  key,
-                                  0,
-                                  winreg.KEY_READ)
-    value, regtype = winreg.QueryValueEx(registry_key, "Release")
+    folder = ("C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\"
+              "Framework\\.NETFramework")
     
-    if value < netcodes[0]:
-        raise ValueError(".NET version not recognised")
+    try:
+        dirlist = [item for item in os.listdir(folder) if
+                               os.path.isdir(os.path.join(folder, item))]
+    except WindowsError:
+        dirlist = []
     
-    j = len(netcodes)
+    if not dirlist:
+        raise ValueError(".NET Framework Pack not found")
     
-    for i, x in enumerate(netcodes):
-        if x > value:
-            j = i
-            break
+    dirlist.remove("v4.X")
     
-    return netversions[j - 1]
+    return  sorted(dirlist)[-1]
 
 
 def getUCRTSDKdir(vs):
@@ -387,7 +374,7 @@ def process_project_file(pfile,
                 
                 if startpos != -1:
                     endpos = line.find("</TargetFrameworkVersion>")
-                    line = line[: startpos + 25] + fw + line[endpos:]
+                    line = line[: startpos + 24] + fw + line[endpos:]
             
             # PlatformToolSet:
             # Skip this change when vs=0
