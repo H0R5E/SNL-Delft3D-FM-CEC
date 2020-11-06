@@ -443,6 +443,7 @@ subroutine mapturbine(turbines,error)
             write(*,*) 'nlinks:',nlinks
             write(*,*) 'ilinks:',ilink(1:nlinks)
             allocate(turbine%edgelist(nlinks)       , stat=istat)
+            allocate(turbine%Uw(2, nlinks), stat=istat)
 !            if (istat==0) allocate(turbine%reldist  (nlinks+1)     , stat=istat)
 !            if (istat==0) allocate(turbine%zlevel   (nlinks,0:kmax), stat=istat)
 !            if (istat==0) allocate(turbine%area     (nlinks,kmax)  , stat=istat)
@@ -574,7 +575,7 @@ subroutine updturbine(turbines)
 ! Local variables
 !
     integer                                            :: j, il, l
-    !integer                                            :: k
+    integer                                            :: idx
     !integer                                            :: n
     !integer                                            :: nm
     real(fp)                                           :: rhow
@@ -684,16 +685,20 @@ subroutine updturbine(turbines)
 
             Ct = turbine%thrustcoef
             aaa = (1.0 - sqrt(1.0-Ct))/2.0
-            Cd = 4.0*(1.0 - sqrt(1.0-Ct))/(1.0 + sqrt(1.0-Ct))
-                        
+            !Cd = 4.0*(1.0 - sqrt(1.0-Ct))/(1.0 + sqrt(1.0-Ct))
+            Cd = (1.0 - 2.0 * aaa) / (1.0 - aaa)
+            
             turbine%current_power = 0.0
             areatot = 0.0
             udisk = 0.0
             do il = 1,numcrossedlinks
-                LL = turbine%edgelist(il)
                 
+                LL = turbine%edgelist(il)
+                turbine%Uw(:, il) = 0.
+
                 if ( kmx.eq.0 ) then   ! 2D
-                  advi(LL) = advi(LL) + 0.5d0*Cd*dxi(LL)*abs(u1(LL))
+                  !advi(LL) = advi(LL) + 0.5d0*Cd*dxi(LL)*abs(u1(LL))
+                  turbine%Uw(1, il) = u1(LL) * Cd
                 else
 !                 get horizontal corner coordinates in rotor plane
                   reldist(1) = turbine%xi1(iL)
@@ -702,6 +707,8 @@ subroutine updturbine(turbines)
 !                 get bedlevel
                   zb = 0.5d0*(bob(1,LL)+bob(2,LL))
                   
+                  idx = 1;
+
                   call getlbotltop(LL,Lb,Lt)
                   do L=Lb,Lt
                      k = L - Lb + 1
@@ -720,17 +727,24 @@ subroutine updturbine(turbines)
                      !endif
                      if (turbine%turbinemodel == 1) then
                         !advi(L) = advi(L) + 0.5d0*Cd*dxi(LL)*abs(u1(L))*blockfrac(1,1)
-                        advi(L) = advi(L) + 0.5d0*Cd*dxi(LL)*abs(u1(L))*blockfrac
+                        !call mess(LEVEL_INFO, 'Applying a lot of advection (model 1)')
+                        !advi(L) = advi(L) + 10.0d0 * 0.5d0*Cd*dxi(LL)*abs(u1(L))*blockfrac
                         !advi(L) = advi(L) + 0.5d0*Cd*abs(u1(L))*area*blockfrac
+                        turbine%Uw(idx, il) =  u1(L) * Cd * blockfrac
                      else
                         !! CCC DEBUG
                         !! verify that u1 is multiplied back in later
                         !advi(L) = advi(L) + 0.5d0*Ct*dxi(LL)*uref**2/(1e-6+abs(u1(L)))*blockfrac
-                        advi(L) = advi(L) + 0.5d0*Ct*dxi(LL)*abs(uref)*blockfrac
+                        !call mess(LEVEL_INFO, 'Applying a lot of advection (model 0)')
+                        !advi(L) = advi(L) + 10.0d0 * 0.5d0*Ct*dxi(LL)*abs(uref)*blockfrac
                         !advi(L) = advi(L) + 0.5d0*Ct*dxi(LL)*abs(uref)*area*blockfrac
+                        turbine%Uw(idx, il) =  u1(L) * Cd * blockfrac
                      endif
                      !uref = u1(L)/(1-aaa)  !induction factor method of reconstructing "reference" velocity
                      turbine%current_power  = turbine%current_power + 0.5_fp * turbine%powercoef * rhow * area * abs(uref**3)*blockfrac
+                     
+                     idx = idx + 1
+                     
                   end do
                 end if
             enddo
@@ -894,5 +908,77 @@ function wrturbine_time(turbines, fds, grpnam, grpind) result (ierror)
     !
     deallocate(sbuff1)
 end function wrturbine_time
+
+FUNCTION turbines_has_link(turbines, L) RESULT (output)
+
+    USE precision
+    USE m_structures, only: structure_turbines, structure_turbine
+    USE unstruc_messages
+    
+    IMPLICIT NONE
+    
+    TYPE(structure_turbines)                                   , INTENT(IN)    :: turbines
+    INTEGER                                                    , INTENT(IN)    :: L
+    LOGICAL                                                                    :: output
+    
+    TYPE(structure_turbine)                                    , POINTER       :: turbine
+    INTEGER                                                                    :: numcrossedlinks
+    INTEGER                                                                    :: j
+    
+    output = .FALSE.
+        
+    IF (.NOT. ASSOCIATED(turbines%nr)) RETURN
+    
+    DO j = 1, SIZE(turbines%nr)
+        
+        turbine => turbines%nr(j)
+        
+        IF (ANY(turbine%edgelist == L)) THEN
+            output = .TRUE.
+            RETURN
+        ENDIF
+        
+    ENDDO
+    
+END FUNCTION turbines_has_link
+
+FUNCTION turbines_get_u1(turbines, L, idx) RESULT (Uw)
+
+    USE precision
+    USE unstruc_messages
+    USE m_structures, ONLY: structure_turbines, structure_turbine
+    
+    IMPLICIT NONE
+    
+    TYPE(structure_turbines)                                   , INTENT(IN)    :: turbines
+    INTEGER                                                    , INTENT(IN)    :: L
+    INTEGER                                                    , INTENT(IN)    :: idx
+    REAL(fp)                                                                   :: Uw
+    
+    TYPE(structure_turbine)                                    , POINTER       :: turbine
+    INTEGER                                                                    :: numcrossedlinks
+    INTEGER                                                                    :: j, il, LL
+        
+    DO j = 1, SIZE(turbines%nr)
+        
+        turbine => turbines%nr(j)
+        numcrossedlinks = turbine%numedges
+        
+        DO il = 1, numcrossedlinks
+        
+            LL = turbine%edgelist(il)
+            
+            IF (LL == L) THEN
+                Uw = turbine%Uw(idx, il)
+                RETURN
+            ENDIF
+            
+        ENDDO
+                
+    ENDDO
+    
+    CALL mess(LEVEL_ERROR, 'turbines_get_u1: matching edge not found')
+    
+END FUNCTION turbines_get_u1
 
 end module m_rdturbine

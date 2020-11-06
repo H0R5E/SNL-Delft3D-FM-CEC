@@ -38769,10 +38769,12 @@ subroutine reallocsrc(n)
  use m_timer
  use unstruc_channel_flow
  use m_1d_structures
+ use m_structures, only: turbines
+ use m_rdturbine
 
  implicit none
 
- integer          :: L0, L, k1, k2, k01, k02, LL, k, n, nn, km, n1, n2, Ld, kb, kt, ks, Lb, Lt, kmxLL, ng, istru
+ integer          :: L0, L, k1, k2, k01, k02, LL, k, n, nn, km, n1, n2, Ld, kb, kt, ks, Lb, Lt, kmxLL, ng, istru, idx
  double precision :: qt, zws0k
  double precision :: accur = 1e-30, wb, ac1, ac2, dsL, sqiuh, qwb, qsigma
  double precision :: qwave
@@ -38789,8 +38791,12 @@ subroutine reallocsrc(n)
        !$OMP PRIVATE(L,k1,k2)
        do L = 1,lnx
           if (hu(L) > 0) then
-             k1 = ln(1,L) ; k2 = ln(2,L)
-             u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+             IF (turbines_has_link(turbines, L)) THEN
+                u1(L) = turbines_get_u1(turbines, L, 1)
+             ELSE
+                k1 = ln(1,L) ; k2 = ln(2,L)
+                u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+             END IF
              q1(L) = au(L)*( teta(L)*u1(L) + (1d0-teta(L))*u0(L) )
              qa(L) = au(L)*u1(L)
           else
@@ -38809,9 +38815,13 @@ subroutine reallocsrc(n)
        !$OMP PRIVATE(L,k1,k2)
        do L=1,Lnx
           if ( hu(L).gt.0 ) then
-             k1 = ln(1,L)
-             k2 = ln(2,L)
-             u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+             IF (turbines_has_link(turbines, L)) THEN
+                u1(L) = turbines_get_u1(turbines, L, 1)
+             ELSE
+                 k1 = ln(1,L)
+                 k2 = ln(2,L)
+                 u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+             END IF
           else
              u1(L) = 0d0
           end if
@@ -38931,9 +38941,19 @@ subroutine reallocsrc(n)
 
        Lb  = Lbot(LL) ; Lt = Ltop(LL) ; kmxLL = kmxL(LL)
        if ( hu(LL) > 0d0 ) then
+           
+          idx = 1
 
           do L = Lb, Lt
-             u1(L) = ru(L) - fu(L)*dsL
+              
+             IF (turbines_has_link(turbines, LL)) THEN
+                u1(L) = turbines_get_u1(turbines, LL, idx)
+             ELSE
+                u1(L) = ru(L) - fu(L)*dsL
+             END IF
+             
+             idx = idx + 1
+            
           enddo
 
           do L = Lt+1, Lb + kmxLL - 1  ! copy top inactive part of column == utop
@@ -44099,7 +44119,7 @@ subroutine update_verticalprofiles()
                        dk(k-1)  = dk(k-1)  + alf*wk                          ! other half added to bed interface to k
                        dke(k-1) = dke(k-1) + alf*wke                         !                                   to eps
                     endif
-                 endif 
+                 endif
               endif
            enddo
         endif

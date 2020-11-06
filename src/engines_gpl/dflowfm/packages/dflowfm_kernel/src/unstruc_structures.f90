@@ -259,6 +259,7 @@ integer :: jaoldstr !< tmp backwards comp: we cannot mix structures from EXT and
      real(fp), dimension(:,:), pointer :: zlevel         ! work array of right size to store levels of layer interfaces per cell
      real(fp), dimension(:,:), pointer :: area           ! work array to store full    exchange area          per layer and cell
      real(fp), dimension(:,:), pointer :: blockfrac      ! work array to store blocked exchange area fraction per layer and cell
+     real(fp), dimension(:,:), pointer :: Uw             ! wake velocities
      
      double precision, dimension(:), allocatable    :: xi1, xi2
  end type structure_turbine
