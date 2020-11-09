@@ -38780,6 +38780,7 @@ subroutine reallocsrc(n)
  double precision :: qwave
  type(t_structure), pointer :: pstru
  integer          :: ierror
+ logical          :: turb_link = .FALSE.
 
  squ = 0d0 ; sqi = 0d0 ; qinbnd = 0d0 ; qoutbnd = 0d0
  ! u1  = 0d0 ; q1  = 0d0 ;  qa = 0d0
@@ -38791,12 +38792,14 @@ subroutine reallocsrc(n)
        !$OMP PRIVATE(L,k1,k2)
        do L = 1,lnx
           if (hu(L) > 0) then
+             
+             k1 = ln(1,L) ; k2 = ln(2,L)
+             u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+             
              IF (turbines_has_link(turbines, L)) THEN
-                u1(L) = turbines_get_u1(turbines, L, 1)
-             ELSE
-                k1 = ln(1,L) ; k2 = ln(2,L)
-                u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+                u1(L) = turbines_get_u1(turbines, L, 1, u1(L))
              END IF
+             
              q1(L) = au(L)*( teta(L)*u1(L) + (1d0-teta(L))*u0(L) )
              qa(L) = au(L)*u1(L)
           else
@@ -38815,13 +38818,15 @@ subroutine reallocsrc(n)
        !$OMP PRIVATE(L,k1,k2)
        do L=1,Lnx
           if ( hu(L).gt.0 ) then
+             
+             k1 = ln(1,L)
+             k2 = ln(2,L)
+             u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+             
              IF (turbines_has_link(turbines, L)) THEN
-                u1(L) = turbines_get_u1(turbines, L, 1)
-             ELSE
-                 k1 = ln(1,L)
-                 k2 = ln(2,L)
-                 u1(L) = ru(L) - fu(L)*( s1(k2) - s1(k1) )
+                u1(L) = turbines_get_u1(turbines, L, 1, u1(L))
              END IF
+             
           else
              u1(L) = 0d0
           end if
@@ -38935,6 +38940,8 @@ subroutine reallocsrc(n)
  else                                     ! 3D
 
     do LL = 1,lnx
+        
+       turb_link = turbines_has_link(turbines, LL)
 
        k1  = ln(1,LL) ; k2 = ln(2,LL)
        dsL = ( s1(k2) - s1(k1) )
@@ -38942,18 +38949,15 @@ subroutine reallocsrc(n)
        Lb  = Lbot(LL) ; Lt = Ltop(LL) ; kmxLL = kmxL(LL)
        if ( hu(LL) > 0d0 ) then
            
-          idx = 1
-
           do L = Lb, Lt
               
-             IF (turbines_has_link(turbines, LL)) THEN
-                u1(L) = turbines_get_u1(turbines, LL, idx)
-             ELSE
-                u1(L) = ru(L) - fu(L)*dsL
-             END IF
+             u1(L) = ru(L) - fu(L)*dsL
              
-             idx = idx + 1
-            
+             IF (turb_link) THEN
+                 idx = L - Lb + 1
+                 u1(L) = turbines_get_u1(turbines, LL, idx, u1(L))
+             END IF
+                         
           enddo
 
           do L = Lt+1, Lb + kmxLL - 1  ! copy top inactive part of column == utop
