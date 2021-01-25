@@ -21,7 +21,6 @@ import sys
 import shutil
 import subprocess
 import itertools
-from contextlib import suppress
 
 if sys.version_info < (3, 0, 0):
     # To avoid problems with encoding:
@@ -47,10 +46,12 @@ toolsversion[2019] = "14.0"
 
 
 def subkeys(path, hkey=winreg.HKEY_LOCAL_MACHINE, flags=0):
-    with suppress(WindowsError), \
-         winreg.OpenKey(hkey, path, 0, winreg.KEY_READ|flags) as k:
-        for i in itertools.count():
-            yield winreg.EnumKey(k, i)
+    with winreg.OpenKey(hkey, path, 0, winreg.KEY_READ|flags) as k:
+        try:
+            for i in itertools.count():
+                yield winreg.EnumKey(k, i)
+        except WindowsError:
+            pass
 
 
 def get_highest_xe_version():
@@ -352,7 +353,24 @@ def process_project_file(pfile,
     # Scan the contents and rewrite the full file
     configuration = 0
     with open(pfile, "w", encoding="utf-8") as filouthandle:
+        
+        fixing_petsc = False
+        
         for line in filin_contents:
+            
+            # Remove petsc source file
+            if remove_petsc:
+                if 'solve_petsc.F90' in line:
+                    fixing_petsc = True
+                
+                if fixing_petsc:
+                    startpos = line.find(
+                                '<FileConfiguration Name="Release|x64"')
+                    if startpos != -1:
+                        line = line[:startpos + 37] + \
+                                                ' ExcludedFromBuild="true">\n'
+                        fixing_petsc = False
+            
             #
             # ToolsVersion
             # Skip this change when vs=0
@@ -374,7 +392,7 @@ def process_project_file(pfile,
                 
                 if startpos != -1:
                     endpos = line.find("</TargetFrameworkVersion>")
-                    line = line[: startpos + 24] + fw + line[endpos:]
+                    line = line[:startpos + 24] + fw + line[endpos:]
             
             # PlatformToolSet:
             # Skip this change when vs=0
@@ -384,7 +402,7 @@ def process_project_file(pfile,
                 if startpos != -1:
                     endpos = line.find("</PlatformToolset>")
                     line = (
-                        line[: startpos + 17]
+                        line[:startpos + 17]
                         + "Intel C++ Compiler {}".format(ifort)
                         + line[endpos:]
                     )
